@@ -8,11 +8,11 @@ def main():
     while validMove is False:
         print("""
         *** What side will you pick? ***
-        1. Left
-        2. Right
+        (L)eft
+        (R)ight
         """)
         playerMove = input()
-        if playerMove != "1" and playerMove != "2":
+        if playerMove != "L" and playerMove != "R":
             print("Invalid input, try again.")
             continue
         else:
@@ -28,13 +28,12 @@ def main():
     print("\n----------------------\n")
     key = playerMove + "-" + password
     hash = "0x" + hashlib.sha256(key.encode()).hexdigest()
-    print('Key : "' + key + '"')
+    print('Key  : "' + key + '"')
     print('Hash : "' + hash + '"')
     print("""
     First input the hash value into the "MakeMove" function.
     Once you're ready to reveal the answer input the key into the "ShowAnswer" function!
     """)
-
 
 
 if __name__ == "__main__":
