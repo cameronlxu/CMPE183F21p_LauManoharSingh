@@ -11,44 +11,53 @@ contract SmartContractGame {
         5. Payout to winner
     */
 
+    // change bet unit if needed
     uint256 public constant MIN_BET = 1 wei; // minimum bet that a player can place
     uint256 public constant REVEAL_DEADLOCK = 10 minutes;
     uint256 public totalBet = 0;
     uint256 private firstRevealTime;
-    bool payoutPaid = false;
+    bool public payoutPaid = false;
+    bool public choiceReceived = false;
+    bool public hashMatches = false;
+    bytes32 public keyChoiceHash = 0x0;
+    string public printWinner = "";
+    string public printPlayerChoice = "";
+    string public printHouseChoice = "";
 
+    // Possible Options for Choices
     enum Choices {
         Left,
         Right,
         Empty
     }
 
+    // Possible End Game Results
     enum Results {
         House,
         Player
     }
 
-    // Address of the house and the player
+    // Address of the House and the Player
     address payable houseAddress = 0x10469edFf34f31fA1d54dC13907705b70f8DbD83;
-    address payable playerAddress;
+    address payable public playerAddress;
 
-    // The player choice is encrypted
-    bytes32 private encryptedChoice;
+    // The Choices is initially sent as encrypted
+    bytes32 public encryptedChoice = 0x0;
 
-    // Moves from enum
-    Choices private playerChoice;
-    Choices private houseChoice;
+    // Choices from enum
+    Choices public playerChoice = Choices.Empty;
+    Choices public houseChoice = Choices.Empty;
 
     /* Registration Phase */
 
-    // Check betting amount
+    // check betting amount
     modifier checkBet() {
         require(msg.value >= MIN_BET);
         require(totalBet == 0 || msg.value >= totalBet);
         _;
     }
 
-    // Check if the players are registered
+    // checks if the players are registered in the game
     modifier checkRegistration() {
         require(msg.sender != playerAddress);
         _;
@@ -58,7 +67,7 @@ contract SmartContractGame {
     function registerPlayer()
         public
         payable
-        checkBet
+        // checkBet
         checkRegistration
         returns (uint256)
     {
@@ -69,24 +78,21 @@ contract SmartContractGame {
 
     /* Commit Phase */
 
-    modifier validPlayerRegistered() {
-        require(msg.sender == playerAddress);
-        _;
-    }
-
     function increaseBet(uint256 amount) public payable {
         if (msg.sender == playerAddress) {
             totalBet += amount; //msg.value ?
         }
     }
 
+    // This function takes in the hashed move outputted from the python script
+    // If an encryptedChoice does not exist, assign the inputted hash value
     function gamePlay(bytes32 hashChoice)
         public
-        validPlayerRegistered
         returns (bool)
     {
         if (encryptedChoice == 0x0) {
             encryptedChoice = hashChoice;
+            choiceReceived = true;
         } else {
             return false;
         }
@@ -95,27 +101,32 @@ contract SmartContractGame {
 
     /* Reveal Phase */
 
+    // Ensure an encryptedChoice was inputted into the contract
     modifier gameHasBeenPlayed() {
         require(encryptedChoice != 0x0);
         _;
     }
 
-    function ShowAnswer(string memory key)
-        public
-        validPlayerRegistered
-        gameHasBeenPlayed
-        returns (Choices)
-    {
+    // This function takes in the key provided from the python script
+    function ShowAnswer(string memory key) public gameHasBeenPlayed returns (Choices) {
         // Encrypt the inputted key
-        bytes32 keyChoice = sha256(abi.encodePacked(key));
+        keyChoiceHash = sha256(abi.encodePacked(key));
 
         // Find what side was chosen (L or R)
-        Choices LorR = Choices(discoverChoice(key));
+        Choices LorR;
+        if (discoverChoice(key) == 0) {
+            LorR = Choices.Left;
+            printPlayerChoice = "Left";
+        } else {
+            LorR = Choices.Right;
+            printPlayerChoice = "Right";
+        }
 
         // Verify that the hashed key matches the hash inputted in the gamePlay() function
         // This is what makes the game secure
-        if (keyChoice == encryptedChoice) {
+        if (keyChoiceHash == encryptedChoice) {
             playerChoice = LorR;
+            hashMatches = true;
         }
 
         // Determine the House choice via random
@@ -131,15 +142,6 @@ contract SmartContractGame {
         return LorR;
     }
 
-    function pickRandomSide() public view returns (Choices) {
-        uint findHouseChoice = random() % 2;
-        if (findHouseChoice == 0) {
-            return Choices(0);
-        } else {
-            return Choices(0);
-        }
-    }
-
     function discoverChoice(string memory str) private pure returns (uint256) {
         bytes1 firstCharacter = bytes(str)[0];
         if (firstCharacter == "L") {
@@ -149,59 +151,61 @@ contract SmartContractGame {
         }
     }
 
+    function pickRandomSide() private returns (Choices) {
+        uint findHouseChoice = random() % 2;
+        if (findHouseChoice == 0) {
+            printHouseChoice = "Left";
+            return Choices.Left;
+        } else {
+            printHouseChoice = "Right";
+            return Choices.Right;
+        }
+    }
+
+    uint public randomNumber;
 
     // Random Function Referenced From: https://www.geeksforgeeks.org/random-number-generator-in-solidity-using-keccak256/ 
-    function random() private view returns (uint) {
+    function random() private returns (uint) {
         uint randNonce = 1;
-        return uint(keccak256(abi.encodePacked(now, msg.sender, randNonce))) % 2;
+        randomNumber = uint(keccak256(abi.encodePacked(now, msg.sender, randNonce))) % 2;
+        return randomNumber;
     }
 
     /* Results Phase */
 
-    modifier revealEnd() {
+    modifier movesPlayed() {
         require(
-            (playerChoice == Choices.Left || playerChoice == Choices.Right) ||
-                (firstRevealTime != 0 &&
-                    block.timestamp > firstRevealTime + REVEAL_DEADLOCK) // change unit
+            ((playerChoice == Choices.Left || playerChoice == Choices.Right) 
+            && (houseChoice == Choices.Left || houseChoice == Choices.Right)) 
+            || (firstRevealTime != 0 && block.timestamp > firstRevealTime + REVEAL_DEADLOCK) // change unit
         );
         _;
     }
 
-    function findWinner() public revealEnd returns (Results) {
+    function findWinner() private movesPlayed returns (Results) {
         Results winner;
         if (playerChoice == houseChoice) {
             winner = Results.Player;
+            printWinner = "Player";
         } else {
             winner = Results.House;
+            printWinner = "House";
         }
 
         payment(playerAddress, houseAddress, winner);
-        reset();
     }
+
+    uint public toPayOut;
 
     function payment(address payable playerAddr, address payable houseAddr, Results theWinner) private {
         if (theWinner == Results.Player) {
-            houseAddr.transfer(totalBet);
+            toPayOut = address(this).balance;
+            houseAddr.transfer(toPayOut);
         } else {
-            playerAddr.transfer(totalBet);
+            toPayOut = address(this).balance;
+            playerAddr.transfer(toPayOut);
         }
 
         payoutPaid = true;
     } 
-
-    modifier paymentGiven() {
-        require(
-            payoutPaid == true
-        );
-        _;
-    }
-
-    function reset() private paymentGiven {
-        totalBet = 0;
-        playerAddress = address(0x0);
-        playerChoice = Choices.Empty;
-        houseChoice = Choices.Empty;
-        encryptedChoice = 0x0;
-        payoutPaid = false;
-    }
 }
