@@ -48,14 +48,28 @@ contract SmartContractGame {
     Choices public playerChoice = Choices.Empty;
     Choices public houseChoice = Choices.Empty;
 
-    /* Registration Phase */
-
-    // check betting amount
-    modifier checkBet() {
-        require(msg.value >= MIN_BET);
-        require(totalBet == 0 || msg.value >= totalBet);
-        _;
+    /* Getter Functions for Testing */
+    function getEncryptedChoice() public view returns (bytes32) {
+        return encryptedChoice;
     }
+
+    function getKeyChoiceHash() public view returns (bytes32) {
+        return keyChoiceHash;
+    }
+
+    function getPlayerChoice() public view returns (string memory) {
+        return printPlayerChoice;
+    }
+
+    function getHouseChoice() public view returns (string memory) {
+        return printHouseChoice;
+    }
+
+    function getWinner() public view returns (string memory) {
+        return printWinner;
+    }
+
+    /* Registration Phase */
 
     // checks if the players are registered in the game
     modifier checkRegistration() {
@@ -67,7 +81,6 @@ contract SmartContractGame {
     function registerPlayer()
         public
         payable
-        // checkBet
         checkRegistration
         returns (uint256)
     {
@@ -142,6 +155,7 @@ contract SmartContractGame {
         return LorR;
     }
 
+    // Determine what move the player has made based on the key inputted in ShowAnswer()
     function discoverChoice(string memory str) private pure returns (uint256) {
         bytes1 firstCharacter = bytes(str)[0];
         if (firstCharacter == "L") {
@@ -151,6 +165,9 @@ contract SmartContractGame {
         }
     }
 
+    // Using a random() function, have the house make a move
+    // If random == 0, house chooses Left.
+    // Else if random == 1, house chooses Right.
     function pickRandomSide() private returns (Choices) {
         uint findHouseChoice = random() % 2;
         if (findHouseChoice == 0) {
@@ -173,15 +190,17 @@ contract SmartContractGame {
 
     /* Results Phase */
 
+    // Ensure that both players have made a move
     modifier movesPlayed() {
         require(
             ((playerChoice == Choices.Left || playerChoice == Choices.Right) 
             && (houseChoice == Choices.Left || houseChoice == Choices.Right)) 
-            || (firstRevealTime != 0 && block.timestamp > firstRevealTime + REVEAL_DEADLOCK) // change unit
+            || (firstRevealTime != 0 && block.timestamp > firstRevealTime + REVEAL_DEADLOCK)
         );
         _;
     }
 
+    // Function that Determines the winner
     function findWinner() private movesPlayed returns (Results) {
         Results winner;
         if (playerChoice == houseChoice) {
@@ -192,11 +211,14 @@ contract SmartContractGame {
             printWinner = "House";
         }
 
+        // Once determining the winner, release the payout
         payment(playerAddress, houseAddress, winner);
     }
 
     uint public toPayOut;
 
+    // Pay the winner
+    // Accepts both addresses and winner, determines the winner and pays out to that address
     function payment(address payable playerAddr, address payable houseAddr, Results theWinner) private {
         if (theWinner == Results.Player) {
             toPayOut = address(this).balance;
