@@ -1,10 +1,10 @@
 # Guess Which Hand? - Smart Contract Game
 
-"Guess Which Hand?" is a smart contract game where a player and a computer pick a choice of 'Left' or 'Right. If the player picks the same move as the computer the player wins. If not, the player loses. 
+***"Guess Which Hand?" is a smart contract game where a player and a computer pick a choice of 'Left' or 'Right. If the player picks the same move as the computer the player wins. If not, the player loses.***
 
 This game is implemented using a smart contract within the Ethereum blockchain. When playing this game, the player will run first run a python script where they pick their move and a password; then is provided a key (combination of the move and password) and a hash of the key via SHA-256.
 
-Once receiving the key & hash, the player will first input the hash value into the smart contract when making their move. Once ready to reveal the answer that the computer made, the player will have to input the key provided from the python script. The smart contract will hash this key via SHA-256 and verify that it is the same hash provided when the player made their move. 
+Once receiving the key & hash, the player will first input the hash value into the smart contract when making their move. When ready to reveal the answer that the computer made, the player will have to input the key provided from the python script. The smart contract will hash this plaintext key via SHA-256 and verify that it is the same hash provided when the player made their move, then set the value of the winner!
 
 ## Installation & Setup
 
@@ -13,9 +13,9 @@ Once receiving the key & hash, the player will first input the hash value into t
 https://github.com/cameronlxu/GuessWhichHand.git
 ```
 
-2. ![Install MetaMask](https://metamask.io/) on your browser (I used Chrome), and be log in.
+2. [Install MetaMask](https://metamask.io/) on your browser (I used Chrome), and be log in.
 
-3. Add ether in the account, either through a ![Faucet](https://faucet.metamask.io/) or ![Ganache](https://trufflesuite.com/ganache/)
+3. Add ether in the account, either through [a Faucet](https://faucet.metamask.io/) or [Ganache](https://trufflesuite.com/ganache/)
 
 4. Open up the [Remix IDE](https://remix.ethereum.org/).
 
