@@ -1,12 +1,15 @@
 # Guess Which Hand? - Smart Contract Game
 
-***"Guess Which Hand?" is a smart contract game where a player and a computer pick a choice of 'Left' or 'Right. If the player picks the same move as the computer the player wins. If not, the player loses.***
+### 🎮 The Game
+"Guess Which Hand?" is a smart contract game where a player and a computer pick a choice of 'Left' or 'Right. If the player picks the same move as the computer the player wins. If not, the player loses.
 
+
+### 📗 Description 
 This game is implemented using a smart contract within the Ethereum blockchain. When playing this game, the player will run first run a python script where they pick their move and a password; then is provided a key (combination of the move and password) and a hash of the key via SHA-256.
 
 Once receiving the key & hash, the player will first input the hash value into the smart contract when making their move. When ready to reveal the answer that the computer made, the player will have to input the key provided from the python script. The smart contract will hash this plaintext key via SHA-256 and verify that it is the same hash provided when the player made their move, then set the value of the winner!
 
-## Installation & Setup
+## 🚀 Installation & Setup
 
 1. Clone the repository.
 ```bash
@@ -21,7 +24,7 @@ https://github.com/cameronlxu/GuessWhichHand.git
 
 5. Import the `game.sol` script.
 
-## Usage
+## 🎯 Usage
 
 1. Run the python script `generateMove.py`:
 ```bash
@@ -50,7 +53,7 @@ python3 generateMove.py
 
 ![winner](images/remix-winner.png)
 
-## High Level Architecture
+## 🖥️ High Level Architecture
 
 ![architecture](images/architecture.png)
 
